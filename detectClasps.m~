@@ -1,5 +1,5 @@
 function detectClasps(videoFile)
-nFrames = 3;
+nFrames = 1;
 padFactor = 3;
 diskSize = 5;
 
@@ -11,27 +11,33 @@ hblob = vision.BlobAnalysis('AreaOutputPort',true,...
     'BoundingBoxOutputPort',true);
 
 % circle active zone
-frame = step(videoFileReader);
-h = figure;
-imshow(frame);
-activeRect = round(getPosition(imrect));
-close(h);
+% % frame = step(videoFileReader);
+% % h = figure;
+% % imshow(frame);
+% % activeRect = round(getPosition(imrect));
+% % close(h);
 
 f1_thresholds = getThresholds(videoFile,nFrames,padFactor);
 f2_thresholds = getThresholds(videoFile,nFrames,padFactor);
 
+figure;
 while ~isDone(videoFileReader)
-  f1_mask = claspMask(frame,thresholds,diskSize);
-  [area,centroid,bbox] = step(hblob,mask);
-  
-  [areaVal,areaKey] = max(area);
-                                        
-  out = step(shapeInserter,frame,bbox(areaKey,:));
-  step(videoPlayer,out);
+    frame = step(videoFileReader);
+    frame = imresize(frame
+% %     frame = imcrop(frame,activeRect);
+    f1_mask = claspMask(frame,f1_thresholds,diskSize);
+    f2_mask = claspMask(frame,f2_thresholds,diskSize);
+    
+    [f1_area,f1_centroid,f1_bbox] = step(hblob,f1_mask);
+    [f1_areaVal,f1_areaKey] = max(f1_area);
+    frame = step(f1_shapeInserter,frame,f1_bbox(f1_areaKey,:));
+    
+    [f2_area,f2_centroid,f2_bbox] = step(hblob,f2_mask);
+    [f2_areaVal,f2_areaKey] = max(f2_area);
+    frame = step(f2_shapeInserter,frame,f2_bbox(f2_areaKey,:));
+    
+    imshow(frame);
 end
-
-frame = step(videoFileReader);
-hsvFrame = rgb2hsv(frame);
 
 end
 
