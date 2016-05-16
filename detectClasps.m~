@@ -1,5 +1,5 @@
 function detectClasps(videoFile)
-nFrames = 1;
+nFrames = 3;
 padFactor = 3;
 diskSize = 5;
 
@@ -20,22 +20,18 @@ close(h);
 f1_thresholds = getThresholds(videoFile,nFrames,padFactor);
 f2_thresholds = getThresholds(videoFile,nFrames,padFactor);
 
-figure;
 while ~isDone(videoFileReader)
-    frame = step(videoFileReader);
-    frame = imcrop(frame,activeRect);
-    f1_mask = claspMask(frame,f1_thresholds,diskSize);
-    f2_mask = claspMask(frame,f2_thresholds,diskSize);
-    
-    [area,centroid,bbox] = step(hblob,f1_mask);
-    [areaVal,areaKey] = max(area);
-    frame = step(f1_shapeInserter,frame,bbox(areaKey,:));
-    
-    [area,centroid,bbox] = step(hblob,f2_mask);
-    [areaVal,areaKey] = max(area);
-    frame = step(f2_shapeInserter,frame,bbox(areaKey,:));
-    imshow(frame);
+  f1_mask = claspMask(frame,thresholds,diskSize);
+  [area,centroid,bbox] = step(hblob,mask);
+  
+  [areaVal,areaKey] = max(area);
+                                        
+  out = step(shapeInserter,frame,bbox(areaKey,:));
+  step(videoPlayer,out);
 end
+
+frame = step(videoFileReader);
+hsvFrame = rgb2hsv(frame);
 
 end
 
