@@ -15,7 +15,9 @@ function data=getHsvBounds(videoFile,nFrames)
         im = read(video,steps(i));
         figure;
         h_im = imshow(im);
-        mask = createMask(imfreehand,h_im); %imrect
+        pos = imrect;
+        mask = createMask(pos,h_im); %imrect
+% %         mask = createMask(imfreehand,h_im); %imrect
         mask = imfill(mask,'holes');
         close;
 
@@ -40,22 +42,23 @@ function data=getHsvBounds(videoFile,nFrames)
         end
     end
     
-    xvalues = 0:.01:1;
-    plotColor = [0 .6 .6];
-    if(~exist('h','var'))
-        h = figure('Position', [0,0,500,500]);
-    end
-    
     data = {allh,alls,allv};
-    titles = {'Hue','Saturation','Value'};
-    for i=1:3
-        figure(h);
-        subplot(3,1,i);
-        hold on;
-        set(gca,'xlim',[0 1]);
-        hist(data{i},xvalues);
-        title(titles{i});
-        hsub = findobj(gca,'Type','patch');
-        set(hsub,'FaceColor',plotColor,'EdgeColor','w');
-    end
+    
+% %     xvalues = 0:.01:1;
+% %     plotColor = [0 .6 .6];
+% %     if(~exist('h','var'))
+% %         h = figure('Position', [0,0,500,500]);
+% %     end
+% %     
+% %     titles = {'Hue','Saturation','Value'};
+% %     for i=1:3
+% %         figure(h);
+% %         subplot(3,1,i);
+% %         hold on;
+% %         set(gca,'xlim',[0 1]);
+% %         hist(data{i},xvalues);
+% %         title(titles{i});
+% %         hsub = findobj(gca,'Type','patch');
+% %         set(hsub,'FaceColor',plotColor,'EdgeColor','w');
+% %     end
 end
