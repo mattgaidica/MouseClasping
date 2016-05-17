@@ -53,14 +53,8 @@ while ~isDone(videoFileReader)
     [f2_area,f2_centroid,f2_bbox] = step(hblob,f2_mask);
     [~,f2_areaKey] = max(f2_area);
     
-    if ~isempty(f1_areaKey)
-        frame = insertObjectAnnotation(frame,'rectangle', ...
-                    f1_bbox(f1_areaKey,:),'1');
-    end
-    if ~isempty(f2_areaKey)
-        frame = insertObjectAnnotation(frame,'rectangle', ...
-                    f2_bbox(f2_areaKey,:),'2');
-    end
+    frame = insertObjectAnnotation(frame,'rectangle', ...
+                    [f1_bbox(f1_areaKey,:);f2_bbox(f2_areaKey,:)],{'1','2'});
     if ~isempty(f1_centroid) && ~isempty(f2_centroid)
         frame = insertShape(frame,'Line',[f1_centroid(f1_areaKey,:) f2_centroid(f2_areaKey,:)]);
     end
@@ -72,6 +66,7 @@ end
 
 function mask=claspMask(frame,thresholds)
 hsvFrame = rgb2hsv(frame);
+thresholds = 
 mask = HSVthreshold(hsvFrame,thresholds);
 mask = imopen(mask, strel('rectangle', [3,3]));
 mask = imclose(mask, strel('rectangle', [15,15]));
