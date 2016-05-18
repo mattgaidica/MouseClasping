@@ -1,7 +1,7 @@
 function detectClasps(videoFile)
 threshStd = 5;
 videoWidth = 720;
-rectSize = [50 50];
+rectSize = [100 25];
 
 v = VideoReader(videoFile);
 
@@ -29,12 +29,10 @@ while hasFrame(v)
     frame = readFrame(v);
     videoScale = videoWidth / size(frame,2);
     frame = imresize(frame,videoScale);
-    frame = insertRect(frame,f1_rect,[10 10]);
     
     if initLoop
         initLoop = false;
-        figureHeight = size(frame,1);
-        h = figure('position',[0 0 size(frame)]);
+        h = figure('position',[0 0 fliplr(size(frame(:,:,1)))]);
     end
     
     f1_mask = claspMask(frame,f1_thresholds);
@@ -45,16 +43,24 @@ while hasFrame(v)
     [f2_area,f2_centroid,f2_bbox] = step(hblob,f2_mask);
     [~,f2_areaKey] = max(f2_area);
     
+    frame = insertRect(frame,f1_rect,[10 10]);
+    frame = insertRect(frame,f2_rect,[20+rectSize(2) 10]);
+    bodyCenter = [pos(1,1)+pos(1,3)/2 pos(1,2)+pos(1,4)/2]*videoScale;
+    frame = insertShape(frame,'FilledCircle',[bodyCenter 25]);
+    
     if ~isempty(f1_areaKey)
         frame = insertObjectAnnotation(frame,'rectangle', ...
                     f1_bbox(f1_areaKey,:),'f1');
+        frame = insertShape(frame,'Line',[f1_centroid(f1_areaKey,:) bodyCenter]);
     end
     if ~isempty(f2_areaKey)
         frame = insertObjectAnnotation(frame,'rectangle', ...
                     f2_bbox(f2_areaKey,:),'f2');
+        frame = insertShape(frame,'Line',[f2_centroid(f2_areaKey,:) bodyCenter]);
     end
     if ~isempty(f1_centroid) && ~isempty(f2_centroid)
-        frame = insertShape(frame,'Line',[f1_centroid(f1_areaKey,:) f2_centroid(f2_areaKey,:)]);
+        frame = insertShape(frame,'Line',[f1_centroid(f1_areaKey,:) f2_centroid(f2_areaKey,:)],...
+            'LineWidth',3);
         lineCenter = (f1_centroid(f1_areaKey,:) + f2_centroid(f2_areaKey,:)) / 2;
         lineDist = round(pdist([f1_centroid(f1_areaKey,:);f2_centroid(f2_areaKey,:)]));
         frame = insertText(frame,lineCenter + [10 -5],strcat(num2str(lineDist),' px'));
@@ -64,6 +70,7 @@ while hasFrame(v)
     pause(1);
 end
 
+close(h);
 end
 
 function frame = insertRect(frame,rect,pos)
@@ -75,6 +82,7 @@ function hsvData = getHsvData(frame,pos)
 % hsvData: dim1=ROI,dim2=[mean,std],dim3=[h,s,v]
 for ii=1:size(pos,1)
     frameRoi = imcrop(frame,pos(ii,:));
+% %     figure;imshow(frameRoi); % debug
     frameRoi = rgb2hsv(frameRoi);
     for jj=1:3
         hsvData(ii,1,jj) = mean2(frameRoi(:,:,jj));
