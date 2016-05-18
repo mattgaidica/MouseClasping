@@ -1,21 +1,35 @@
 function detectClasps(videoFile)
-threshStd = 5;
-videoWidth = 720;
+% [] return log data
+% [] pixels to distance option
+% [] clasp detector
+% [] save video
+% [] min blob size (if color doesn't exist)
+
+px2mm = 10;
+threshStd = 3;
+videoWidth = 320;
 rectSize = [100 25];
 
 v = VideoReader(videoFile);
 
 hblob = vision.BlobAnalysis('AreaOutputPort',true,...
     'CentroidOutputPort',true,... 
-    'BoundingBoxOutputPort',true);
+    'BoundingBoxOutputPort',true,...
+    'MinimumBlobArea',5*5,...
+    'MaximumBlobArea',100*100,...
+    'ExcludeBorderBlobs',true);
 
 frameTime = selectFrame(videoFile,5);
 v.CurrentTime = frameTime;
 frame = readFrame(v);
 v.CurrentTime = 0;
 
-pos = markBody(frame);
-hsvData = getHsvData(frame,pos);
+videoScale = videoWidth / size(frame,2);
+
+bodyPos = markBody(frame); % [body, f1, f2]
+bodyCenter = [bodyPos(1,1)+bodyPos(1,3)/2 bodyPos(1,2)+bodyPos(1,4)/2]*videoScale;
+
+hsvData = getHsvData(frame,bodyPos);
 
 % second ROI
 f1_thresholds = formatThresholds(squeeze(hsvData(2,:,:)),threshStd);
@@ -25,10 +39,12 @@ f2_thresholds = formatThresholds(squeeze(hsvData(3,:,:)),threshStd);
 f2_rect = im2uint8(hsv2rgb(makeHsvRect(f2_thresholds,rectSize)));
 
 initLoop = true;
+logData = []; % [distance px, distance mm, clasped]
 while hasFrame(v)
     frame = readFrame(v);
-    videoScale = videoWidth / size(frame,2);
     frame = imresize(frame,videoScale);
+    curFrame = round(v.CurrentTime * v.Duration)+1;
+    logData(curFrame,:) = nan(1,3);
     
     if initLoop
         initLoop = false;
@@ -45,7 +61,6 @@ while hasFrame(v)
     
     frame = insertRect(frame,f1_rect,[10 10]);
     frame = insertRect(frame,f2_rect,[20+rectSize(2) 10]);
-    bodyCenter = [pos(1,1)+pos(1,3)/2 pos(1,2)+pos(1,4)/2]*videoScale;
     frame = insertShape(frame,'FilledCircle',[bodyCenter 25]);
     
     if ~isempty(f1_areaKey)
@@ -64,6 +79,20 @@ while hasFrame(v)
         lineCenter = (f1_centroid(f1_areaKey,:) + f2_centroid(f2_areaKey,:)) / 2;
         lineDist = round(pdist([f1_centroid(f1_areaKey,:);f2_centroid(f2_areaKey,:)]));
         frame = insertText(frame,lineCenter + [10 -5],strcat(num2str(lineDist),' px'));
+        
+        logData(curFrame,1) = lineDist;
+        if ~isempty(px2mm)
+            logData(curFrame,2) = lineDist * px2mm;
+        end
+        if lineDist <= bodyPos(1,3) % presumably, body width
+            logData(curFrame,3) = true;
+            frame = insertText(frame,[10 size(frame,1)-25],'CLASPED','BoxColor','w');
+        else
+            logData(curFrame,3) = false;
+            frame = insertText(frame,[10 size(frame,1)-25],'NOT CLASPED','BoxColor','r');
+        end
+    else
+        logData(curFrame,1) = nan;
     end
     
     imshow(frame);
@@ -82,7 +111,7 @@ function hsvData = getHsvData(frame,pos)
 % hsvData: dim1=ROI,dim2=[mean,std],dim3=[h,s,v]
 for ii=1:size(pos,1)
     frameRoi = imcrop(frame,pos(ii,:));
-% %     figure;imshow(frameRoi); % debug
+    figure;imshow(frameRoi); % debug
     frameRoi = rgb2hsv(frameRoi);
     for jj=1:3
         hsvData(ii,1,jj) = mean2(frameRoi(:,:,jj));
