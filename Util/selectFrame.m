@@ -1,5 +1,5 @@
 function frameTime = selectFrame(videoFile,nn)
-displaySize = 720; %px
+displaySize = 500; %px
 
 v = VideoReader(videoFile);
 nFrames = v.Duration * v.FrameRate;
