@@ -1,6 +1,6 @@
 function logData = detectClasps(videoFile)
 % [] return log data: frame data, color data, pos data (use cells)
-% [] save video
+% [] statistics: how many clasps? time spent clasp/notclasp
 
 px2mm = 10;
 threshStd = 5;
