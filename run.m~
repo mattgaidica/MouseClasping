@@ -1,0 +1,37 @@
+% videoFile = '/Users/mattgaidica/Dropbox/Projects/Mouse Clasping/tremor-clip-480.mov';
+% v = VideoReader(videoFile);
+% 
+% allFrames = [];
+% ii = 1;
+% while hasFrame(v)
+%     disp(['Frame ',num2str(ii)]);
+%     frame = readFrame(v);
+%     frame = imcrop(frame,pos);
+%     frameGray = imadjust(rgb2gray(frame),[0.2 0.8]);
+%     allFrames(ii,:,:) = frameGray;
+%     ii = ii + 1;
+% end
+
+% imshow(frame);
+% h = imrect;
+% pos = getPosition(h);
+
+Fs = 30;
+fpass = [1 100];
+h=figure;
+for ii=1:size(allFrames,1)
+    for jj=1:size(allFrames,@)
+    data = squeeze(allFrames(:,ii,ii));
+    figure(h);
+    plot(data);
+    hold on;
+    [W,freqs] = calculateComplexScalograms_EnMasse(data,'Fs',Fs,'fpass',fpass,'doplot',true);
+end
+
+
+% h = imfreehand;
+% mask = createMask(h);
+% close(hfig);
+% 
+% frameMasked = frameGray .* uint8(mask);
+% imshow(frameMasked);

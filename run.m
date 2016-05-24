@@ -1,49 +1,39 @@
-% videoFile = '/Users/mattgaidica/Dropbox/Projects/Mouse Clasping/testVideo.mov';
-% video = VideoReader(videoFile);
-% 
-videoFileReader = vision.VideoFileReader(videoFile);
-videoPlayer = vision.VideoPlayer();
-shapeInserter = vision.ShapeInserter('BorderColor','Custom','CustomBorderColor',[1 0 0]);
-frame = step(videoFileReader);
-hsvFrame = rgb2hsv(frame);
+videoFile = '/Users/mattgaidica/Dropbox/Projects/Mouse Clasping/IMG_3092.mov';
+v = VideoReader(videoFile);
 
+resizeScale = 0.15;
+frame = read(v,1);
+frame = imresize(frame,resizeScale);
+imshow(frame);
+h = imrect;
+pos = getPosition(h);
 
+v = VideoReader(videoFile);
 
-nFrames = 3;
-hsvBounds = getHsvBounds(videoFile,nFrames);
-padFactor = 3;
-thresholds = [
-    mean(hsvBounds{1}), std(hsvBounds{1}) * padFactor...
-    mean(hsvBounds{2})-(std(hsvBounds{2})*padFactor), mean(hsvBounds{2})+(std(hsvBounds{2})*padFactor)...
-    mean(hsvBounds{3})-(std(hsvBounds{3})*padFactor), mean(hsvBounds{3})+(std(hsvBounds{3})*padFactor)...
-    ];
-
-% thresholds = [hCenter max(hCenter - threshPad) min(hCenter + threshPad)...
-%     sCenter max(sCenter - threshPad) min(sCenter + threshPad)...
-%     vCenter max(vCenter - threshPad) min(vCenter + threshPad)];
-
-mask = HSVthreshold(hsvFrame,thresholds);
-sedisk = strel('disk',3);
-mask = imopen(mask,sedisk);
-mask = imfill(mask,'holes');
-figure; imshow(mask);
-
-% objectImage = step(shapeInserter, objectFrame, objectRegion);
-% title('Red box shows object region');
-
-while ~isDone(videoFileReader)
-  frame = step(videoFileReader);          
-  hsvFrame = rgb2hsv(frame);
-  mask = HSVthreshold(hsvFrame,thresholds);
-  mask = imopen(mask,sedisk);
-  mask = imfill(mask,'holes');
-  [area,centroid,bbox] = step(hblob,mask);
-  
-  [areaVal,areaKey] = max(area);
-                                        
-  out = step(shapeInserter,frame,bbox(areaKey,:));
-  step(videoPlayer,out);
+allFrames = [];
+ii = 1;
+while hasFrame(v)
+    disp(['Frame ',num2str(ii)]);
+    frame = readFrame(v);
+    frame = imresize(frame,resizeScale);
+    frame = imcrop(frame,pos);
+    frameGray = imadjust(rgb2gray(frame),[0.2 0.8]);
+    allFrames(ii,:,:) = frameGray;
+    ii = ii + 1;
 end
 
-release(videoPlayer);
-release(videoFileReader);
+% imshow(frame);
+% h = imrect;
+% pos = getPosition(h);
+
+Fs = 30;
+fpass = [1 15];
+data = squeeze(reshape(allFrames,[size(allFrames,1) 1 size(allFrames,2)*size(allFrames,3) ]));
+[W,freqList] = calculateComplexScalograms_EnMasse(data,'Fs',Fs,'fpass',fpass,'doplot',true);
+
+% h = imfreehand;
+% mask = createMask(h);
+% close(hfig);
+% 
+% frameMasked = frameGray .* uint8(mask);
+% imshow(frameMasked);
